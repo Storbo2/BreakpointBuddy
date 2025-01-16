@@ -2,21 +2,29 @@ import React, { useState, useEffect } from 'react';
 import '../styles/queryBox.css';
 
 const QueryBox = () => {
-    const [position, setPosition] = useState({ top: 'calc(100% - 120px)', left: 'calc(100% - 220px)' });
-    const [styles, setStyles] = useState({ color: '#00bfff', fontSize: '1.5rem' });
-    const [visible, setVisible] = useState(true);
+    const [position, setPosition] = useState({ top: 'calc(100% - 130px)', left: 'calc(100% - 130px)' });
+    const [styles, setStyles] = useState({ color: '#00bfff', size: 130 });
     const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
     const [breakpoint, setBreakpoint] = useState('lg');
+    const [visible, setVisible] = useState(true);
 
     const handleDragEnd = (e) => {
         const { clientX, clientY } = e;
         const width = window.innerWidth;
         const height = window.innerHeight;
 
-        const newPosition = {
-            top: Math.max(0, Math.min(clientY, height - 120)) + 'px',
-            left: Math.max(0, Math.min(clientX, width - 220)) + 'px',
-        };
+        let newPosition = {};
+        const margin = 10;
+
+        if (clientX < width / 2 && clientY < height / 2) {
+            newPosition = { top: `${margin}px`, left: `${margin}px` };
+        } else if (clientX >= width / 2 && clientY < height / 2) {
+            newPosition = { top: `${margin}px`, left: `calc(100% - ${styles.size + margin}px)` };
+        } else if (clientX < width / 2 && clientY >= height / 2) {
+            newPosition = { top: `calc(100% - ${styles.size + margin}px)`, left: `${margin}px` };
+        } else {
+            newPosition = { top: `calc(100% - ${styles.size + margin}px)`, left: `calc(100% - ${styles.size + margin}px)` };
+        }
         setPosition(newPosition);
     };
 
@@ -38,24 +46,36 @@ const QueryBox = () => {
         return () => window.removeEventListener('resize', updateDimensions);
     }, []);
 
+    const changeSize = (delta) => {
+        setStyles((prev) => {
+            const newSize = Math.max(100, Math.min(200, prev.size + delta));
+            return { ...prev, size: newSize };
+        });
+    };
+
     return visible ? (
         <>
             <div
                 className="query-box"
                 style={{
-                    ...position,
+                    top: position.top,
+                    left: position.left,
+                    width: `${styles.size}px`,
+                    height: `${styles.size}px`,
                     backgroundColor: styles.color,
-                    fontSize: styles.fontSize,
                 }}
                 draggable
                 onDragEnd={handleDragEnd}
             >
-                <p>
-                    [{breakpoint}] {dimensions.width}px x {dimensions.height}px
-                </p>
-                <button className="close-button" onClick={() => setVisible(false)}>
+                <div className="close-button" onClick={() => setVisible(false)}>
                     ✖
-                </button>
+                </div>
+                <div className="breakpoint" style={{ fontSize: `${styles.size / 4}px` }}>
+                    {breakpoint}
+                </div>
+                <div className="dimensions" style={{ fontSize: `${styles.size / 8}px` }}>
+                    {dimensions.width}×{dimensions.height}
+                </div>
             </div>
             <div className="controls">
                 <div className="icon" onClick={() => document.getElementById('color-picker').click()}>
@@ -68,12 +88,8 @@ const QueryBox = () => {
                     onChange={(e) => setStyles({ ...styles, color: e.target.value })}
                     style={{ display: 'none' }}
                 />
-                <div className="card" onClick={() => setStyles({ ...styles, fontSize: `${parseFloat(styles.fontSize) + 0.1}rem` })}>
-                    +
-                </div>
-                <div className="card" onClick={() => setStyles({ ...styles, fontSize: `${Math.max(0.5, parseFloat(styles.fontSize) - 0.1)}rem` })}>
-                    -
-                </div>
+                <div className="card" onClick={() => changeSize(10)}>+</div>
+                <div className="card" onClick={() => changeSize(-10)}>-</div>
             </div>
         </>
     ) : null;
